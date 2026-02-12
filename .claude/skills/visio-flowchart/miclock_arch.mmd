@@ -1,0 +1,49 @@
+graph TB
+    subgraph Presentation["Presentation Layer (SwiftUI)"]
+        MenuBar["MenuBarController<br/>アイコン表示・クイック操作"]
+        Settings["SettingsViewModel<br/>設定編集・バリデーション"]
+    end
+
+    subgraph Application["Application Layer"]
+        Engine["MicLockEngine<br/>監視開始/停止・補正ロジック"]
+    end
+
+    subgraph Domain["Domain Layer"]
+        Rules["ビジネスルール<br/>音量ロック判定・エラー分類"]
+    end
+
+    subgraph Infrastructure["Infrastructure Layer"]
+        AudioRepo["AudioDeviceRepository<br/>CoreAudioアクセス"]
+        DeviceObs["DeviceObserver<br/>プロパティ変更リスナー"]
+        Polling["PollingGuard<br/>周期監視バックアップ"]
+        Config["ConfigStore<br/>UserDefaults永続化"]
+        Logger["DiagnosticsLogger<br/>構造化ログ"]
+        Launch["LaunchAtLoginManager<br/>SMAppService"]
+    end
+
+    MenuBar --> Engine
+    Settings --> Engine
+    Engine --> Rules
+    Rules --> AudioRepo
+    Engine --> DeviceObs
+    Engine --> Polling
+    Engine --> Config
+    Engine --> Logger
+    MenuBar --> Launch
+
+    DeviceObs --> AudioRepo
+    Polling --> AudioRepo
+
+    subgraph States["状態遷移"]
+        Idle["Idle<br/>待機"]
+        Monitor["Monitoring<br/>監視中"]
+        Correct["Correcting<br/>補正中"]
+        Unsupport["Unsupported<br/>非対応"]
+        Error["Error<br/>エラー"]
+    end
+
+    Idle -->|"ロックON"| Monitor
+    Monitor -->|"音量ズレ"| Correct
+    Correct --> Monitor
+    Monitor -->|"非対応デバイス"| Unsupport
+    Unsupport -->|"デバイス変更"| Monitor
